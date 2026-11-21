@@ -1,0 +1,33 @@
+name: Build Windows installer
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Stage VST3
+        run: |
+          New-Item -ItemType Directory -Force stage | Out-Null
+          Copy-Item "build/WizahFX_artefacts/Release/VST3/Wizah FX.vst3" "stage/" -Recurse
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\WizahFX.iss'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Wizah-FX-Setup
+          path: installer/Output/Wizah-FX-Setup.exe
